@@ -69,7 +69,7 @@
       <div class="bg-[#1a1a1a] border border-[#333] rounded-lg p-4 sticky top-28">
         <h3 class="text-xs font-sans font-semibold text-gray-500 uppercase tracking-widest mb-4 pb-2 border-b border-[#333]">Sözlükte Neler Var?</h3>
         
-        <button id="randomBtn" class="w-full flex items-center justify-center gap-2 bg-[#2a2a2a] hover:bg-[#333] text-gray-300 py-2 rounded-md transition-colors mb-4 text-[11px] font-semibold tracking-[0.2em] uppercase border border-[#444]">
+        <button id="randomBtn" class="w-full flex items-center justify-center gap-2 bg-[#2a2a2a] hover:bg-[#333] active:scale-95 active:bg-[#444] text-gray-300 py-2 rounded-md transition-all duration-150 mb-4 text-[11px] font-semibold tracking-[0.2em] uppercase border border-[#444]">
           <i data-lucide="shuffle" class="w-3.5 h-3.5"></i> Rastgele
         </button>
 
@@ -87,65 +87,22 @@
   </main>
 
   <!-- Footer -->
-  <footer class="mt-auto border-t border-[#333] py-6 text-center flex flex-col items-center gap-2">
+  <footer class="mt-auto border-t border-[#333] py-6 text-center flex flex-col items-center gap-2 select-none">
     <p class="text-sm text-gray-400 font-serif italic">
       Leksikon Argo Etimolojisi Sözlüğü
     </p>
     <p class="text-xs text-gray-600 font-sans tracking-wide">
-      Oğul Güney 2026, v1.0
+      Oğul Güney 2026, v1.1
     </p>
   </footer>
+
+  <!-- Data Source -->
+  <script src="data.js"></script>
 
   <!-- Application Logic -->
   <script>
     // Initialize Lucide icons
     lucide.createIcons();
-
-    // Dictionary Data
-    const dictionaryData = [
-      {
-        word: "manita",
-        origin: "İtalyanca <i>mantenuta</i> \"besleme (kadın), metres\" sözcüğünden alıntıdır.",
-        explanation: "Karş. Fransızca <i>maintenir</i> > İngilizce <i>maintain</i> \"bakmak, beslemek\".",
-        history: "mantinota \"metres, sürekli görülen hayat kadını\" [Ahmed Mithat, 1882]."
-      },
-      {
-        word: "fiyaka",
-        origin: "İtalyanca <i>fiacca</i> \"gösteriş, çalım\" sözcüğünden alıntıdır.",
-        explanation: "İtalyanca sözcük <i>fiacco</i> \"yorgun, bitkin\" sözcüğünden türetilmiştir.",
-        history: "fiyaka \"gösteriş\" [Ahmet Rasim, Şehir Mektupları, 1898]."
-      },
-      {
-        word: "arak",
-        origin: "Arapça <i>ˁrq</i> kökünden gelen <i>ˁaraq</i> \"ter, damıtılmış içki\" sözcüğünden alıntıdır. Argo anlamı \"çalma, hırsızlık\".",
-        explanation: "Arapça sözcük <i>ˁaraqa</i> \"terledi\" fiilinin masdarıdır.",
-        history: "arak \"hırsızlık\" [Osman Cemal Kaygılı, Argo Lugati, 1932]."
-      },
-      {
-        word: "zula",
-        origin: "Bilinmeyen bir dilden alıntıdır. \"Gizli yer, saklama yeri\" anlamındadır.",
-        explanation: "Kökeni kesin olarak bilinmemekle birlikte, Rumca veya İtalyanca argo kökenli olabileceği düşünülmektedir.",
-        history: "zula \"gizli cep, saklanacak yer\" [Argo Sözlüğü, 1940]."
-      },
-      {
-        word: "kıyak",
-        origin: "Türkçe kökenli olduğu düşünülmektedir. \"Güzel, iyi, hoşa giden\" anlamındadır.",
-        explanation: "<i>Kıy-</i> fiilinden türetilmiş olabileceği veya doğrudan argo bir türetme olduğu varsayılmaktadır.",
-        history: "kıyak \"iyi, güzel\" [Hüseyin Rahmi Gürpınar, 1920]."
-      },
-      {
-        word: "afili",
-        origin: "Rumca <i>afíli</i> (αφίλι) \"gösteriş, çalım\" sözcüğünden alıntıdır.",
-        explanation: "Rumca sözcük Yunanca <i>aphyllos</i> \"yapraksız\" sözcüğünden evrilmiş olabilir, ancak anlam bağı belirsizdir.",
-        history: "afili \"gösterişli, fiyakalı\" [Argo Sözlüğü, 1930]."
-      },
-      {
-        word: "racon",
-        origin: "İtalyanca <i>ragione</i> \"akıl, mantık, hak, hukuk\" sözcüğünden alıntıdır.",
-        explanation: "Latince <i>ratio, ration-</i> \"hesap, mantık\" sözcüğünden evrilmiştir.",
-        history: "racon \"yol yordam, kural, gösteriş\" [Osman Cemal Kaygılı, 1932]."
-      }
-    ];
 
     let selectedWord = dictionaryData[0];
     let currentRandomWords = [];
@@ -176,26 +133,56 @@
       selectedWord = wordObj;
       const container = document.getElementById('wordContainer');
       
-      let html = `<h1 class="text-4xl md:text-5xl font-serif font-bold text-[#8c6b93] mb-10 capitalize tracking-tight">${wordObj.word}</h1>`;
+      let html = `
+        <div class="-mx-8 -mt-8 md:-mx-12 md:-mt-12 mb-10 px-8 md:px-12 py-8 md:py-10 bg-[#222] border-b border-[#333] rounded-t-xl shadow-inner">
+          <h1 class="text-4xl md:text-5xl font-serif font-bold text-[#8c6b93] capitalize tracking-tight m-0">${wordObj.word}</h1>
+        </div>
+      `;
+      
       html += `<div class="flex flex-col gap-6 font-serif text-lg leading-relaxed text-gray-300">`;
       
-      const sections = [
-        { title: 'Köken', content: wordObj.origin, className: '' },
-        { title: 'Ek Açıklama', content: wordObj.explanation, className: '' },
-        { title: 'Literatür', content: wordObj.history, className: 'text-gray-400' }
-      ].filter(s => s.content);
+      const sections = [];
+      if (wordObj.origin) sections.push({ title: 'Köken', content: wordObj.origin, className: '' });
+      
+      if (wordObj.evolution && wordObj.evolution.length > 0) {
+        const evolutionHtml = wordObj.evolution.map(step => {
+          const spaceIdx = step.indexOf(' ');
+          let lang = '';
+          let word = step;
+          if (spaceIdx > -1) {
+            const firstPart = step.substring(0, spaceIdx);
+            if (firstPart.endsWith('.') || firstPart === '?') {
+              lang = `<span class="text-[#73937a] opacity-90 text-[10px] uppercase tracking-wider mr-1.5 font-semibold">${firstPart}</span>`;
+              word = step.substring(spaceIdx + 1);
+            }
+          }
+          return `<span class="inline-flex items-baseline bg-[#2a2a2a] border border-[#444] text-gray-300 px-2.5 py-1 rounded-md text-sm font-sans tracking-wide shadow-sm">${lang}<i class="font-serif text-[15px]">${word}</i></span>`;
+        }).join('<span class="text-gray-500 mx-1.5 font-sans text-sm">></span>');
+        
+        sections.push({ title: 'Evrim', content: `<div class="flex flex-wrap items-center gap-y-2 mt-1">${evolutionHtml}</div>`, isHtml: true });
+      }
+
+      if (wordObj.explanation) sections.push({ title: 'Ek Açıklama', content: wordObj.explanation, className: '' });
+      if (wordObj.history) sections.push({ title: 'Literatür', content: wordObj.history, className: 'text-gray-400' });
 
       sections.forEach((section, idx) => {
         if (idx > 0) html += `<hr class="w-32 border-[#333]" />`;
         html += `
           <section>
             <h2 class="text-[11px] font-sans font-semibold text-gray-500 uppercase tracking-[0.2em] mb-3 select-none">${section.title}</h2>
-            <p class="${section.className}">${highlightKeywords(section.content)}</p>
+            ${section.isHtml ? section.content : `<p class="${section.className}">${highlightKeywords(section.content)}</p>`}
           </section>
         `;
       });
       
       html += `</div>`;
+      
+      html += `
+        <div class="mt-12 pt-4 text-[11px] text-gray-500 font-sans tracking-widest uppercase opacity-60 select-none text-right">
+          Son Güncellenme: ${wordObj.lastUpdated || 'Bilinmiyor'}
+        </div>
+      `;
+      
       container.innerHTML = html;
       
       // Update sidebar active states

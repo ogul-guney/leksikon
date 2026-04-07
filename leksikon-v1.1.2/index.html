@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LEKsİKON - Argo Etimoloji Sözlüğü</title>
+  
+  <!-- Tailwind CSS (CDN) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Lucide Icons (CDN) -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Georgia:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind Config -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            serif: ['Georgia', 'Times New Roman', 'serif'],
+          }
+        }
+      }
+    }
+  </script>
+  
+  <!-- Custom Styles -->
+  <style>
+    body { background-color: #121212; color: #e0e0e0; }
+    ::selection { background-color: #8c6b93; color: white; }
+  </style>
+</head>
+<body class="min-h-screen font-sans flex flex-col">
+
+  <!-- Header -->
+  <header class="border-b border-[#333] bg-[#1a1a1a] sticky top-0 z-10">
+    <div class="max-w-5xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+      
+      <!-- Logo -->
+      <div id="logo" class="text-3xl font-bold tracking-wider text-white cursor-pointer select-none flex flex-col items-center sm:items-start font-serif">
+        <div>lek<em class="text-[#8c6b93] italic">sik</em>on</div>
+      </div>
+      
+      <!-- Search Bar -->
+      <div class="relative w-full sm:w-80">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <i data-lucide="search" class="h-4 w-4 text-gray-500"></i>
+        </div>
+        <input type="text" id="searchInput" placeholder="Kelime ara..." class="w-full bg-[#2a2a2a] border border-[#444] text-white rounded-full py-2 pl-10 pr-4 focus:outline-none focus:border-[#8c6b93] focus:ring-1 focus:ring-[#8c6b93] transition-colors placeholder-gray-500" autocomplete="off">
+        
+        <!-- Search Results Dropdown -->
+        <div id="searchResults" class="hidden absolute top-full left-0 right-0 mt-2 bg-[#2a2a2a] border border-[#444] rounded-md shadow-xl overflow-hidden z-20">
+          <ul id="searchResultsList" class="max-h-60 overflow-y-auto"></ul>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="max-w-5xl mx-auto px-4 py-10 flex flex-col md:flex-row gap-8 w-full flex-1">
+    
+    <!-- Sidebar - Word List -->
+    <aside class="w-full md:w-1/4 order-2 md:order-1">
+      <div class="bg-[#1a1a1a] border border-[#333] rounded-lg p-4 sticky top-28">
+        <h3 class="text-xs font-sans font-semibold text-gray-500 uppercase tracking-widest mb-4 pb-2 border-b border-[#333]">Sözlükte Neler Var?</h3>
+        
+        <button id="randomBtn" class="w-full flex items-center justify-center gap-2 bg-[#2a2a2a] hover:bg-[#333] active:scale-95 active:bg-[#444] text-gray-300 py-2 rounded-md transition-all duration-150 mb-4 text-[11px] font-semibold tracking-[0.2em] uppercase border border-[#444]">
+          <i data-lucide="shuffle" class="w-3.5 h-3.5"></i> Rastgele
+        </button>
+
+        <ul id="randomWordsList" class="space-y-1"></ul>
+      </div>
+    </aside>
+
+    <!-- Dictionary Entry -->
+    <article class="w-full md:w-3/4 order-1 md:order-2">
+      <div id="wordContainer" class="bg-[#1a1a1a] border border-[#333] rounded-xl p-8 md:p-12 shadow-2xl">
+        <!-- Content injected via JS -->
+      </div>
+    </article>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="mt-auto border-t border-[#333] py-6 text-center flex flex-col items-center gap-2 select-none">
+    <p class="text-sm text-gray-400 font-serif italic">
+      Leksikon Argo Etimolojisi Sözlüğü
+    </p>
+    <p class="text-xs text-gray-600 font-sans tracking-wide">
+      Oğul Güney 2026, v1.1
+    </p>
+  </footer>
+
+  <!-- Data Source -->
+  <script src="data.js"></script>
+
+  <!-- Application Logic -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Initialize Lucide icons safely
+      if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+      }
+
+      // Check if data loaded successfully
+      if (typeof dictionaryData === 'undefined' || !dictionaryData || dictionaryData.length === 0) {
+        const container = document.getElementById('wordContainer');
+        if (container) {
+          container.innerHTML = '<div class="text-red-400 p-4 border border-red-900/50 bg-red-900/10 rounded-lg">Sözlük verisi yüklenemedi. Lütfen sayfanızı yenileyin veya bağlantınızı kontrol edin.</div>';
+        }
+        return;
+      }
+
+      let selectedWord = dictionaryData[0];
+      let currentRandomWords = [];
+
+      // Optimize: Precompile regexes for highlighting
+      const languages = ['İtalyanca', 'Fransızca', 'İngilizce', 'Arapça', 'Türkçe', 'Osmanlıca', 'Rumca', 'Latince', 'Yunanca'];
+      const langRegexes = languages.map(lang => new RegExp(`(^|[^a-zA-ZğüşıöçĞÜŞİÖÇ])(${lang})(?=[^a-zA-ZğüşıöçĞÜŞİÖÇ]|$)`, 'g'));
+      const quoteRegex = /"([^"]+)"/g;
+
+      // Utility: Highlight Keywords
+      function highlightKeywords(text) {
+        if (!text) return '';
+        let highlighted = text;
+        
+        langRegexes.forEach(regex => {
+          highlighted = highlighted.replace(regex, `$1<span class='text-[#73937a] font-medium'>$2</span>`);
+        });
+        
+        highlighted = highlighted.replace(quoteRegex, "<span class='text-gray-200'>\"$1\"</span>");
+        return highlighted;
+      }
+
+      // Utility: Get Random Words (Optimized with Fisher-Yates shuffle)
+      function getRandomWords(count) {
+        const shuffled = [...dictionaryData];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled.slice(0, count);
+      }
+
+      // Render: Main Word Entry
+      function renderWord(wordObj) {
+        if (!wordObj) return;
+        selectedWord = wordObj;
+        const container = document.getElementById('wordContainer');
+        if (!container) return;
+        
+        let html = `
+          <div class="-mx-8 -mt-8 md:-mx-12 md:-mt-12 mb-10 px-8 md:px-12 py-8 md:py-10 bg-[#222] border-b border-[#333] rounded-t-xl shadow-inner">
+            <h1 class="text-4xl md:text-5xl font-serif font-bold text-[#8c6b93] capitalize tracking-tight m-0">${wordObj.word}</h1>
+          </div>
+        `;
+        
+        html += `<div class="flex flex-col gap-6 font-serif text-lg leading-relaxed text-gray-300">`;
+        
+        const sections = [];
+        if (wordObj.origin) sections.push({ title: 'Köken', content: wordObj.origin, className: '' });
+        
+        if (wordObj.evolution && wordObj.evolution.length > 0) {
+          const evolutionHtml = wordObj.evolution.map(step => {
+            const spaceIdx = step.indexOf(' ');
+            let lang = '';
+            let word = step;
+            if (spaceIdx > -1) {
+              const firstPart = step.substring(0, spaceIdx);
+              if (firstPart.endsWith('.') || firstPart === '?') {
+                lang = `<span class="text-[#73937a] opacity-90 text-[10px] uppercase tracking-wider mr-1.5 font-semibold">${firstPart}</span>`;
+                word = step.substring(spaceIdx + 1);
+              }
+            }
+            return `<span class="inline-flex items-baseline bg-[#2a2a2a] border border-[#444] text-gray-300 px-2.5 py-1 rounded-md text-sm font-sans tracking-wide shadow-sm">${lang}<i class="font-serif text-[15px]">${word}</i></span>`;
+          }).join('<span class="text-gray-500 mx-1.5 font-sans text-sm">></span>');
+          
+          sections.push({ title: 'Evrim', content: `<div class="flex flex-wrap items-center gap-y-2 mt-1">${evolutionHtml}</div>`, isHtml: true });
+        }
+
+        if (wordObj.explanation) sections.push({ title: 'Ek Açıklama', content: wordObj.explanation, className: '' });
+        if (wordObj.history) sections.push({ title: 'Literatür', content: wordObj.history, className: 'text-gray-400' });
+
+        sections.forEach((section, idx) => {
+          if (idx > 0) html += `<hr class="w-32 border-[#333]" />`;
+          html += `
+            <section>
+              <h2 class="text-[11px] font-sans font-semibold text-gray-500 uppercase tracking-[0.2em] mb-3 select-none">${section.title}</h2>
+              ${section.isHtml ? section.content : `<p class="${section.className}">${highlightKeywords(section.content)}</p>`}
+            </section>
+          `;
+        });
+        
+        html += `</div>`;
+        
+        html += `
+          <div class="mt-12 pt-4 text-[11px] text-gray-500 font-sans tracking-widest uppercase opacity-60 select-none text-right">
+            Son Güncellenme: ${wordObj.lastUpdated || 'Bilinmiyor'}
+          </div>
+        `;
+        
+        container.innerHTML = html;
+        
+        // Update sidebar active states
+        renderRandomWords();
+      }
+
+      // Render: Sidebar Random Words
+      function renderRandomWords() {
+        const list = document.getElementById('randomWordsList');
+        if (!list) return;
+        
+        // Use DocumentFragment for better performance
+        const fragment = document.createDocumentFragment();
+        
+        currentRandomWords.forEach(item => {
+          const li = document.createElement('li');
+          const btn = document.createElement('button');
+          const isActive = selectedWord && selectedWord.word === item.word;
+          
+          btn.className = `text-left w-full px-3 py-2 rounded-md transition-colors text-sm font-medium ${isActive ? 'bg-[#2a2a2a] text-[#8c6b93]' : 'text-gray-400 hover:text-gray-200 hover:bg-[#2a2a2a]'}`;
+          btn.textContent = item.word;
+          btn.onclick = () => {
+            renderWord(item);
+            const searchInput = document.getElementById('searchInput');
+            const searchResults = document.getElementById('searchResults');
+            if (searchInput) searchInput.value = '';
+            if (searchResults) searchResults.classList.add('hidden');
+          };
+          
+          li.appendChild(btn);
+          fragment.appendChild(li);
+        });
+        
+        list.innerHTML = '';
+        list.appendChild(fragment);
+      }
+
+      // Event Listeners
+      const randomBtn = document.getElementById('randomBtn');
+      if (randomBtn) {
+        randomBtn.addEventListener('click', () => {
+          currentRandomWords = getRandomWords(4);
+          renderRandomWords();
+        });
+      }
+
+      const logo = document.getElementById('logo');
+      if (logo) {
+        logo.addEventListener('click', () => {
+          renderWord(dictionaryData[0]);
+        });
+      }
+
+      // Search Logic
+      const searchInput = document.getElementById('searchInput');
+      const searchResults = document.getElementById('searchResults');
+      const searchResultsList = document.getElementById('searchResultsList');
+
+      if (searchInput && searchResults && searchResultsList) {
+        let searchTimeout;
+        
+        searchInput.addEventListener('input', (e) => {
+          clearTimeout(searchTimeout);
+          const term = e.target.value.toLowerCase().trim();
+          
+          if (!term) {
+            searchResults.classList.add('hidden');
+            return;
+          }
+          
+          // Debounce search input
+          searchTimeout = setTimeout(() => {
+            const filtered = dictionaryData.filter(item => item.word.toLowerCase().includes(term));
+            
+            if (filtered.length > 0) {
+              const fragment = document.createDocumentFragment();
+              filtered.forEach(item => {
+                const li = document.createElement('li');
+                li.className = "px-4 py-2 hover:bg-[#3a3a3a] cursor-pointer border-b border-[#333] last:border-0 text-gray-200 transition-colors";
+                li.textContent = item.word;
+                li.onmousedown = () => { // mousedown fires before blur
+                  renderWord(item);
+                  searchInput.value = '';
+                  searchResults.classList.add('hidden');
+                };
+                fragment.appendChild(li);
+              });
+              searchResultsList.innerHTML = '';
+              searchResultsList.appendChild(fragment);
+            } else {
+              searchResultsList.innerHTML = '<div class="px-4 py-3 text-gray-500 text-sm">Sonuç bulunamadı.</div>';
+            }
+            searchResults.classList.remove('hidden');
+          }, 150);
+        });
+
+        searchInput.addEventListener('focus', () => {
+          if (searchInput.value.trim()) searchResults.classList.remove('hidden');
+        });
+
+        searchInput.addEventListener('blur', () => {
+          setTimeout(() => {
+            if (searchResults) searchResults.classList.add('hidden');
+          }, 150);
+        });
+      }
+
+      // Initialization
+      currentRandomWords = getRandomWords(4);
+      renderWord(dictionaryData[0]);
+    });
+  </script>
+</body>
+</html>
+

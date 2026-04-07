@@ -32,6 +32,8 @@
   <style>
     body { background-color: #121212; color: #e0e0e0; }
     ::selection { background-color: #8c6b93; color: white; }
+    @keyframes tooltipFade { from { opacity: 0; transform: translate(-50%, 4px); } to { opacity: 1; transform: translate(-50%, 0); } }
+    .animate-tooltip { animation: tooltipFade 0.15s ease-out forwards; }
   </style>
 </head>
 <body class="min-h-screen font-sans flex flex-col">
@@ -69,7 +71,7 @@
       <div class="bg-[#1a1a1a] border border-[#333] rounded-lg p-4 sticky top-28">
         <h3 class="text-xs font-sans font-semibold text-gray-500 uppercase tracking-widest mb-4 pb-2 border-b border-[#333]">Sözlükte Neler Var?</h3>
         
-        <button id="randomBtn" class="w-full flex items-center justify-center gap-2 bg-[#2a2a2a] hover:bg-[#333] active:scale-95 active:bg-[#444] text-gray-300 py-2 rounded-md transition-all duration-150 mb-4 text-[11px] font-semibold tracking-[0.2em] uppercase border border-[#444]">
+        <button id="randomBtn" class="w-full flex items-center justify-center gap-2 bg-[#2a2a2a] hover:bg-[#333] active:scale-[0.98] active:bg-[#3a3a3a] text-gray-300 py-2 rounded-md transition-all duration-300 ease-out mb-4 text-[11px] font-semibold tracking-[0.2em] uppercase border border-[#444]">
           <i data-lucide="shuffle" class="w-3.5 h-3.5"></i> Rastgele
         </button>
 
@@ -79,7 +81,7 @@
 
     <!-- Dictionary Entry -->
     <article class="w-full md:w-3/4 order-1 md:order-2">
-      <div id="wordContainer" class="bg-[#1a1a1a] border border-[#333] rounded-xl p-8 md:p-12 shadow-2xl">
+      <div id="wordContainer" class="relative bg-[#1a1a1a] border border-[#333] rounded-xl p-8 md:p-12 shadow-2xl my-10 md:my-8">
         <!-- Content injected via JS -->
       </div>
     </article>
@@ -92,7 +94,7 @@
       Leksikon Argo Etimolojisi Sözlüğü
     </p>
     <p class="text-xs text-gray-600 font-sans tracking-wide">
-      Oğul Güney 2026, v1.1
+      Oğul Güney 2026, v1.1.4
     </p>
   </footer>
 
@@ -101,172 +103,310 @@
 
   <!-- Application Logic -->
   <script>
-    // Initialize Lucide icons
-    lucide.createIcons();
-
-    let selectedWord = dictionaryData[0];
-    let currentRandomWords = [];
-
-    // Utility: Highlight Keywords
-    function highlightKeywords(text) {
-      if (!text) return '';
-      let highlighted = text;
-      const languages = ['İtalyanca', 'Fransızca', 'İngilizce', 'Arapça', 'Türkçe', 'Osmanlıca', 'Rumca', 'Latince', 'Yunanca'];
-      
-      languages.forEach(lang => {
-        const regex = new RegExp(`(^|[^a-zA-ZğüşıöçĞÜŞİÖÇ])(${lang})(?=[^a-zA-ZğüşıöçĞÜŞİÖÇ]|$)`, 'g');
-        highlighted = highlighted.replace(regex, `$1<span class='text-[#73937a] font-medium'>$2</span>`);
-      });
-      
-      highlighted = highlighted.replace(/"([^"]+)"/g, "<span class='text-gray-200'>\"$1\"</span>");
-      return highlighted;
-    }
-
-    // Utility: Get Random Words
-    function getRandomWords(count) {
-      const shuffled = [...dictionaryData].sort(() => 0.5 - Math.random());
-      return shuffled.slice(0, count);
-    }
-
-    // Render: Main Word Entry
-    function renderWord(wordObj) {
-      selectedWord = wordObj;
-      const container = document.getElementById('wordContainer');
-      
-      let html = `
-        <div class="-mx-8 -mt-8 md:-mx-12 md:-mt-12 mb-10 px-8 md:px-12 py-8 md:py-10 bg-[#222] border-b border-[#333] rounded-t-xl shadow-inner">
-          <h1 class="text-4xl md:text-5xl font-serif font-bold text-[#8c6b93] capitalize tracking-tight m-0">${wordObj.word}</h1>
-        </div>
-      `;
-      
-      html += `<div class="flex flex-col gap-6 font-serif text-lg leading-relaxed text-gray-300">`;
-      
-      const sections = [];
-      if (wordObj.origin) sections.push({ title: 'Köken', content: wordObj.origin, className: '' });
-      
-      if (wordObj.evolution && wordObj.evolution.length > 0) {
-        const evolutionHtml = wordObj.evolution.map(step => {
-          const spaceIdx = step.indexOf(' ');
-          let lang = '';
-          let word = step;
-          if (spaceIdx > -1) {
-            const firstPart = step.substring(0, spaceIdx);
-            if (firstPart.endsWith('.') || firstPart === '?') {
-              lang = `<span class="text-[#73937a] opacity-90 text-[10px] uppercase tracking-wider mr-1.5 font-semibold">${firstPart}</span>`;
-              word = step.substring(spaceIdx + 1);
-            }
-          }
-          return `<span class="inline-flex items-baseline bg-[#2a2a2a] border border-[#444] text-gray-300 px-2.5 py-1 rounded-md text-sm font-sans tracking-wide shadow-sm">${lang}<i class="font-serif text-[15px]">${word}</i></span>`;
-        }).join('<span class="text-gray-500 mx-1.5 font-sans text-sm">></span>');
-        
-        sections.push({ title: 'Evrim', content: `<div class="flex flex-wrap items-center gap-y-2 mt-1">${evolutionHtml}</div>`, isHtml: true });
+    document.addEventListener('DOMContentLoaded', () => {
+      // Initialize Lucide icons safely
+      if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
       }
 
-      if (wordObj.explanation) sections.push({ title: 'Ek Açıklama', content: wordObj.explanation, className: '' });
-      if (wordObj.history) sections.push({ title: 'Literatür', content: wordObj.history, className: 'text-gray-400' });
-
-      sections.forEach((section, idx) => {
-        if (idx > 0) html += `<hr class="w-32 border-[#333]" />`;
-        html += `
-          <section>
-            <h2 class="text-[11px] font-sans font-semibold text-gray-500 uppercase tracking-[0.2em] mb-3 select-none">${section.title}</h2>
-            ${section.isHtml ? section.content : `<p class="${section.className}">${highlightKeywords(section.content)}</p>`}
-          </section>
-        `;
-      });
-      
-      html += `</div>`;
-      
-      html += `
-        <div class="mt-12 pt-4 text-[11px] text-gray-500 font-sans tracking-widest uppercase opacity-60 select-none text-right">
-          Son Güncellenme: ${wordObj.lastUpdated || 'Bilinmiyor'}
-        </div>
-      `;
-      
-      container.innerHTML = html;
-      
-      // Update sidebar active states
-      renderRandomWords();
-    }
-
-    // Render: Sidebar Random Words
-    function renderRandomWords() {
-      const list = document.getElementById('randomWordsList');
-      list.innerHTML = '';
-      
-      currentRandomWords.forEach(item => {
-        const li = document.createElement('li');
-        const btn = document.createElement('button');
-        const isActive = selectedWord && selectedWord.word === item.word;
-        
-        btn.className = `text-left w-full px-3 py-2 rounded-md transition-colors text-sm font-medium ${isActive ? 'bg-[#2a2a2a] text-[#8c6b93]' : 'text-gray-400 hover:text-gray-200 hover:bg-[#2a2a2a]'}`;
-        btn.textContent = item.word;
-        btn.onclick = () => {
-          renderWord(item);
-          document.getElementById('searchInput').value = '';
-          document.getElementById('searchResults').classList.add('hidden');
-        };
-        
-        li.appendChild(btn);
-        list.appendChild(li);
-      });
-    }
-
-    // Event Listeners
-    document.getElementById('randomBtn').addEventListener('click', () => {
-      currentRandomWords = getRandomWords(4);
-      renderRandomWords();
-    });
-
-    document.getElementById('logo').addEventListener('click', () => {
-      renderWord(dictionaryData[0]);
-    });
-
-    // Search Logic
-    const searchInput = document.getElementById('searchInput');
-    const searchResults = document.getElementById('searchResults');
-    const searchResultsList = document.getElementById('searchResultsList');
-
-    searchInput.addEventListener('input', (e) => {
-      const term = e.target.value.toLowerCase();
-      if (!term) {
-        searchResults.classList.add('hidden');
+      // Check if data loaded successfully
+      if (typeof dictionaryData === 'undefined' || !dictionaryData || dictionaryData.length === 0) {
+        const container = document.getElementById('wordContainer');
+        if (container) {
+          container.innerHTML = '<div class="text-red-400 p-4 border border-red-900/50 bg-red-900/10 rounded-lg">Sözlük verisi yüklenemedi. Lütfen sayfanızı yenileyin veya bağlantınızı kontrol edin.</div>';
+        }
         return;
       }
-      
-      const filtered = dictionaryData.filter(item => item.word.toLowerCase().includes(term));
-      searchResultsList.innerHTML = '';
-      
-      if (filtered.length > 0) {
-        filtered.forEach(item => {
-          const li = document.createElement('li');
-          li.className = "px-4 py-2 hover:bg-[#3a3a3a] cursor-pointer border-b border-[#333] last:border-0 text-gray-200 transition-colors";
-          li.textContent = item.word;
-          li.onmousedown = () => { // mousedown fires before blur
-            renderWord(item);
-            searchInput.value = '';
-            searchResults.classList.add('hidden');
-          };
-          searchResultsList.appendChild(li);
+
+      let selectedWord = dictionaryData[0];
+      let currentRandomWords = [];
+      const visibleWords = dictionaryData.filter(w => !w.isHidden).sort((a, b) => a.word.localeCompare(b.word, 'tr'));
+      window.__renderWord = renderWord;
+
+      // Optimize: Precompile regexes for highlighting
+      const languages = ['İtalyanca', 'Fransızca', 'İngilizce', 'Arapça', 'Türkçe', 'Osmanlıca', 'Rumca', 'Latince', 'Yunanca'];
+      const langRegexes = languages.map(lang => new RegExp(`(^|[^a-zA-ZğüşıöçĞÜŞİÖÇ])(${lang})(?=[^a-zA-ZğüşıöçĞÜŞİÖÇ]|$)`, 'g'));
+      const quoteRegex = /"([^"]+)"/g;
+
+      // Utility: Highlight Keywords
+      function highlightKeywords(text) {
+        if (!text) return '';
+        let highlighted = text;
+        
+        langRegexes.forEach(regex => {
+          highlighted = highlighted.replace(regex, `$1<span class='text-[#73937a] font-medium'>$2</span>`);
         });
-      } else {
-        searchResultsList.innerHTML = '<div class="px-4 py-3 text-gray-500 text-sm">Sonuç bulunamadı.</div>';
+        
+        highlighted = highlighted.replace(quoteRegex, "<span class='text-gray-200'>\"$1\"</span>");
+        highlighted = highlighted.replace(/<i>(.*?)<\/i>/g, "<i class='text-[#d4a373]'>$1</i>");
+        
+        return highlighted;
       }
-      searchResults.classList.remove('hidden');
+
+      // Utility: Get Random Words (Optimized with Fisher-Yates shuffle)
+      function getRandomWords(count) {
+        const shuffled = [...visibleWords];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled.slice(0, count);
+      }
+
+      // Render: Main Word Entry
+      function renderWord(wordObj) {
+        if (!wordObj) return;
+        selectedWord = wordObj;
+        const container = document.getElementById('wordContainer');
+        if (!container) return;
+        
+        let prevNextHtmlTop = '';
+        let prevNextHtmlBottom = '';
+        
+        const sortedIdx = visibleWords.findIndex(w => w.word === wordObj.word);
+        if (sortedIdx !== -1) {
+          const prevWord = sortedIdx > 0 ? visibleWords[sortedIdx - 1] : null;
+          const nextWord = sortedIdx < visibleWords.length - 1 ? visibleWords[sortedIdx + 1] : null;
+          
+          if (prevWord) {
+            prevNextHtmlTop = `
+              <div class="absolute bottom-full left-6 md:left-10 flex items-center gap-1.5 px-3.5 py-1.5 bg-[#222] border border-[#333] border-b-[#222] rounded-t-lg text-[10px] font-sans text-gray-400 hover:text-[#8c6b93] cursor-pointer transition-colors uppercase tracking-widest z-10 translate-y-[1px]" onclick="openWord('${prevWord.word}')">
+                <i data-lucide="arrow-up" class="w-3 h-3"></i> ${prevWord.word}
+              </div>
+            `;
+          }
+          if (nextWord) {
+            prevNextHtmlBottom = `
+              <div class="absolute top-full right-6 md:right-10 flex items-center gap-1.5 px-3.5 py-1.5 bg-[#1a1a1a] border border-[#333] border-t-[#1a1a1a] rounded-b-lg text-[10px] font-sans text-gray-400 hover:text-[#8c6b93] cursor-pointer transition-colors uppercase tracking-widest z-10 -translate-y-[1px]" onclick="openWord('${nextWord.word}')">
+                ${nextWord.word} <i data-lucide="arrow-down" class="w-3 h-3"></i>
+              </div>
+            `;
+          }
+        }
+
+        let html = `
+          ${prevNextHtmlTop}
+          <div class="-mx-8 -mt-8 md:-mx-12 md:-mt-12 mb-10 px-8 md:px-12 py-8 md:py-10 bg-[#222] border-b border-[#333] rounded-t-xl shadow-inner">
+            <h1 class="text-4xl md:text-5xl font-serif font-bold text-[#8c6b93] capitalize tracking-tight m-0 leading-none">${wordObj.word}</h1>
+            ${wordObj.forms && wordObj.forms.length > 0 ? `<div class="mt-1.5 text-[16px] font-sans text-gray-300 tracking-wide lowercase">(${wordObj.forms.join(', ')})</div>` : ''}
+          </div>
+        `;
+        
+        html += `<div class="flex flex-col gap-6 font-serif text-lg leading-relaxed text-gray-300">`;
+        
+        const sections = [];
+        if (wordObj.origin) sections.push({ title: 'Köken', content: wordObj.origin, className: '' });
+        
+        if (wordObj.evolution && wordObj.evolution.length > 0) {
+          const evolutionHtml = wordObj.evolution.map((item, index) => {
+            const step = typeof item === 'string' ? item : item.step;
+            const meaning = typeof item === 'string' ? '' : item.meaning;
+            
+            const spaceIdx = step.indexOf(' ');
+            let lang = '';
+            let word = step;
+            if (spaceIdx > -1) {
+              const firstPart = step.substring(0, spaceIdx);
+              if (firstPart.endsWith('.') || firstPart === '?') {
+                lang = `<span class="text-[#73937a] opacity-90 text-[10px] uppercase tracking-wider mr-1.5 font-semibold">${firstPart}</span>`;
+                word = step.substring(spaceIdx + 1);
+              }
+            }
+            
+            const arrow = index === wordObj.evolution.length - 1 ? '' : '<span class="text-gray-500 font-sans text-sm">></span>';
+            
+            return `
+              <li class="flex items-center gap-2">
+                <button onclick="showMeaning(event, this, '${meaning.replace(/'/g, "\\'")}')" class="relative inline-flex items-baseline bg-[#2a2a2a] border border-[#444] text-gray-300 px-2.5 py-1 rounded-md text-sm font-sans tracking-wide shadow-sm hover:bg-[#333] hover:border-[#555] transition-all cursor-pointer group">
+                  ${lang}<i class="font-serif text-[15px]">${word}</i>
+                </button>
+                ${arrow}
+              </li>
+            `;
+          }).join('');
+          
+          sections.push({ title: 'Evrim', content: `<ul class="flex flex-wrap items-center gap-y-3 gap-x-2 mt-1">${evolutionHtml}</ul>`, isHtml: true });
+        }
+
+        if (wordObj.explanation) sections.push({ title: 'Ek Açıklama', content: wordObj.explanation, className: '' });
+        if (wordObj.history) sections.push({ title: 'Literatür', content: wordObj.history, className: 'text-gray-400' });
+
+        sections.forEach((section, idx) => {
+          if (idx > 0) html += `<hr class="w-32 border-[#333]" />`;
+          html += `
+            <section>
+              <h2 class="text-[11px] font-sans font-semibold text-gray-500 uppercase tracking-[0.2em] mb-3 select-none">${section.title}</h2>
+              ${section.isHtml ? section.content : `<p class="${section.className}">${highlightKeywords(section.content)}</p>`}
+            </section>
+          `;
+        });
+        
+        html += `</div>`;
+        
+        html += prevNextHtmlBottom;
+        
+        html += `
+          <div class="mt-8 pt-4 border-t border-[#333] text-[11px] text-gray-500 font-sans tracking-wide opacity-60 select-none text-right">
+            Son güncelleme: ${wordObj.lastUpdated || 'Bilinmiyor'}
+          </div>
+        `;
+        
+        container.innerHTML = html;
+        if (typeof lucide !== 'undefined') lucide.createIcons({ root: container });
+        
+        // Update sidebar active states
+        renderRandomWords();
+      }
+
+      // Render: Sidebar Random Words
+      function renderRandomWords() {
+        const list = document.getElementById('randomWordsList');
+        if (!list) return;
+        
+        // Use DocumentFragment for better performance
+        const fragment = document.createDocumentFragment();
+        
+        currentRandomWords.forEach(item => {
+          const li = document.createElement('li');
+          const btn = document.createElement('button');
+          const isActive = selectedWord && selectedWord.word === item.word;
+          
+          btn.className = `text-left w-full px-3 py-2 rounded-md transition-colors text-sm font-medium ${isActive ? 'bg-[#2a2a2a] text-[#8c6b93]' : 'text-gray-400 hover:text-gray-200 hover:bg-[#2a2a2a]'}`;
+          btn.textContent = item.word;
+          btn.onclick = () => {
+            renderWord(item);
+            const searchInput = document.getElementById('searchInput');
+            const searchResults = document.getElementById('searchResults');
+            if (searchInput) searchInput.value = '';
+            if (searchResults) searchResults.classList.add('hidden');
+          };
+          
+          li.appendChild(btn);
+          fragment.appendChild(li);
+        });
+        
+        list.innerHTML = '';
+        list.appendChild(fragment);
+      }
+
+      // Event Listeners
+      const randomBtn = document.getElementById('randomBtn');
+      if (randomBtn) {
+        randomBtn.addEventListener('click', () => {
+          currentRandomWords = getRandomWords(4);
+          renderRandomWords();
+        });
+      }
+
+      const logo = document.getElementById('logo');
+      if (logo) {
+        logo.addEventListener('click', () => {
+          openWord('leksikon');
+        });
+      }
+
+      // Search Logic
+      const searchInput = document.getElementById('searchInput');
+      const searchResults = document.getElementById('searchResults');
+      const searchResultsList = document.getElementById('searchResultsList');
+
+      if (searchInput && searchResults && searchResultsList) {
+        let searchTimeout;
+        
+        searchInput.addEventListener('input', (e) => {
+          clearTimeout(searchTimeout);
+          const term = e.target.value.toLowerCase().trim();
+          
+          if (!term) {
+            searchResults.classList.add('hidden');
+            return;
+          }
+          
+          // Debounce search input
+          searchTimeout = setTimeout(() => {
+            const filtered = visibleWords.filter(item => item.word.toLowerCase().includes(term));
+            
+            if (filtered.length > 0) {
+              const fragment = document.createDocumentFragment();
+              filtered.forEach(item => {
+                const li = document.createElement('li');
+                li.className = "px-4 py-2 hover:bg-[#3a3a3a] cursor-pointer border-b border-[#333] last:border-0 text-gray-200 transition-colors";
+                li.textContent = item.word;
+                li.onmousedown = () => { // mousedown fires before blur
+                  renderWord(item);
+                  searchInput.value = '';
+                  searchResults.classList.add('hidden');
+                };
+                fragment.appendChild(li);
+              });
+              searchResultsList.innerHTML = '';
+              searchResultsList.appendChild(fragment);
+            } else {
+              searchResultsList.innerHTML = '<div class="px-4 py-3 text-gray-500 text-sm">Sonuç bulunamadı.</div>';
+            }
+            searchResults.classList.remove('hidden');
+          }, 150);
+        });
+
+        searchInput.addEventListener('focus', () => {
+          if (searchInput.value.trim()) searchResults.classList.remove('hidden');
+        });
+
+        searchInput.addEventListener('blur', () => {
+          setTimeout(() => {
+            if (searchResults) searchResults.classList.add('hidden');
+          }, 150);
+        });
+      }
+
+      // Initialization
+      currentRandomWords = getRandomWords(4);
+      renderWord(visibleWords[0]);
+      
+      if (logo) {
+        logo.style.cursor = 'pointer';
+        logo.addEventListener('click', () => {
+          openWord('leksikon');
+        });
+      }
     });
 
-    searchInput.addEventListener('focus', () => {
-      if (searchInput.value) searchResults.classList.remove('hidden');
+    // Global Functions
+    window.openWord = function(wordStr) {
+      const w = dictionaryData.find(item => item.word === wordStr);
+      if (w) {
+        // Find and trigger the renderWord function (it's inside the DOMContentLoaded scope, so we need to access it)
+        // A better way is to dispatch a custom event or just re-render.
+        // Since renderWord is scoped, we'll dispatch a custom event.
+        document.dispatchEvent(new CustomEvent('openWordEvent', { detail: w }));
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    };
+    
+    document.addEventListener('openWordEvent', (e) => {
+      if (window.__renderWord) window.__renderWord(e.detail);
     });
-
-    searchInput.addEventListener('blur', () => {
-      setTimeout(() => searchResults.classList.add('hidden'), 150);
-    });
-
-    // Initialization
-    currentRandomWords = getRandomWords(4);
-    renderWord(dictionaryData[0]);
-
+    window.showMeaning = function(e, btn, meaning) {
+      e.stopPropagation();
+      document.querySelectorAll('.evo-tooltip').forEach(el => el.remove());
+      if (!meaning || meaning === 'undefined') return;
+      
+      const tooltip = document.createElement('div');
+      tooltip.className = 'evo-tooltip absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-[#8c6b93] text-white text-xs rounded-md shadow-lg whitespace-nowrap z-20 font-sans tracking-wide pointer-events-none animate-tooltip';
+      tooltip.textContent = meaning;
+      
+      const arrow = document.createElement('div');
+      arrow.className = 'absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#8c6b93]';
+      tooltip.appendChild(arrow);
+      
+      btn.appendChild(tooltip);
+      
+      const removeTooltip = () => {
+        tooltip.remove();
+        document.removeEventListener('click', removeTooltip);
+      };
+      document.addEventListener('click', removeTooltip);
+    };
   </script>
 </body>
 </html>
